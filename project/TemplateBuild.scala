@@ -9,10 +9,10 @@ object TemplateBuild extends Build {
   lazy val template = Project("template", file(".")).settings(projectSettings: _*)
 
   lazy val projectSettings = Seq(
-    scalaVersion := "2.10.4",
+    scalaVersion := "2.11.0",
     fork in Test := true,
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "2.0" % "test"
+      "org.scalatest" %% "scalatest" % "2.1.3" % "test"
     )
   )
 }
