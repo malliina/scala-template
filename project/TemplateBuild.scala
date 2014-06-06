@@ -1,3 +1,4 @@
+import com.mle.sbtutils.SbtUtils
 import sbt._
 import sbt.Keys._
 
@@ -6,13 +7,10 @@ import sbt.Keys._
  */
 object TemplateBuild extends Build {
 
-  lazy val template = Project("template", file(".")).settings(projectSettings: _*)
+  lazy val template = SbtUtils.testableProject("template").settings(projectSettings: _*)
 
   lazy val projectSettings = Seq(
-    scalaVersion := "2.11.0",
-    fork in Test := true,
-    libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "2.1.3" % "test"
-    )
+    scalaVersion := "2.11.1",
+    fork in Test := true
   )
 }
