@@ -11,7 +11,7 @@ object TemplateBuild extends Build {
 
   lazy val projectSettings = Seq(
     version := "0.0.1",
-    scalaVersion := "2.11.4",
+    scalaVersion := "2.11.6",
     fork in Test := true
   )
 }
