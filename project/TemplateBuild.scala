@@ -11,7 +11,7 @@ object TemplateBuild extends Build {
 
   lazy val projectSettings = Seq(
     version := "0.0.1",
-    scalaVersion := "2.11.6",
+    scalaVersion := "2.11.7",
     fork in Test := true,
     libraryDependencies += "com.github.malliina" %% "util-base" % "0.7.0"
   )

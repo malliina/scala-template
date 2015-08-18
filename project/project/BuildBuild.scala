@@ -4,8 +4,11 @@ import sbt._
 object BuildBuild extends Build {
 
   override lazy val settings = super.settings ++ sbtPlugins ++ Seq(
-    resolvers += Resolver.url("malliina bintray sbt", url("https://dl.bintray.com/malliina/sbt-plugins/"))(Resolver.ivyStylePatterns)
+    resolvers += ivyResolver("malliina bintray sbt", url("https://dl.bintray.com/malliina/sbt-plugins/"))
   )
+
+  def ivyResolver(name: String, repoUrl: sbt.URL) =
+    Resolver.url(name, repoUrl)(Resolver.ivyStylePatterns)
 
   def sbtPlugins = Seq(
     "com.github.malliina" %% "sbt-utils" % "0.2.0"
