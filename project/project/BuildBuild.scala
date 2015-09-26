@@ -11,7 +11,7 @@ object BuildBuild extends Build {
     Resolver.url(name, repoUrl)(Resolver.ivyStylePatterns)
 
   def sbtPlugins = Seq(
-    "com.github.malliina" %% "sbt-utils" % "0.2.0"
+    "com.github.malliina" %% "sbt-utils" % "0.2.1"
   ) map addSbtPlugin
 
   override lazy val projects = Seq(root)

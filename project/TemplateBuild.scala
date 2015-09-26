@@ -13,6 +13,6 @@ object TemplateBuild extends Build {
     version := "0.0.1",
     scalaVersion := "2.11.7",
     fork in Test := true,
-    libraryDependencies += "com.github.malliina" %% "util-base" % "0.7.0"
+    libraryDependencies += "com.github.malliina" %% "util-base" % "0.8.0"
   )
 }
