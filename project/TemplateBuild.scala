@@ -1,4 +1,4 @@
-import com.mle.sbtutils.SbtProjects
+import com.malliina.sbtutils.SbtProjects
 import sbt._
 import sbt.Keys._
 
@@ -13,6 +13,6 @@ object TemplateBuild extends Build {
     version := "0.0.1",
     scalaVersion := "2.11.7",
     fork in Test := true,
-    libraryDependencies += "com.github.malliina" %% "util-base" % "0.8.0"
+    libraryDependencies += "com.malliina" %% "util-base" % "0.9.0"
   )
 }

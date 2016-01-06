@@ -1,4 +1,4 @@
-package com.mle.template
+package com.malliina.template
 
 /**
  *
