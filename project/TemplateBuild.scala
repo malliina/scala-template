@@ -3,8 +3,8 @@ import sbt._
 import sbt.Keys._
 
 /**
- * A scala build file template.
- */
+  * A scala build file template.
+  */
 object TemplateBuild extends Build {
 
   lazy val template = SbtProjects.testableProject("template").settings(projectSettings: _*)
@@ -13,6 +13,12 @@ object TemplateBuild extends Build {
     version := "0.0.1",
     scalaVersion := "2.11.7",
     fork in Test := true,
-    libraryDependencies += "com.malliina" %% "util-base" % "0.9.0"
+    resolvers ++= Seq(
+      Resolver.jcenterRepo,
+      Resolver.bintrayRepo("malliina", "maven")
+    ),
+    libraryDependencies ++= Seq(
+      "com.malliina" %% "util-base" % "0.9.0"
+    )
   )
 }
