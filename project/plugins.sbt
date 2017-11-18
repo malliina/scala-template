@@ -4,5 +4,5 @@ def ivyResolver(name: String, repoUrl: sbt.URL) =
   Resolver.url(name, repoUrl)(Resolver.ivyStylePatterns)
 
 Seq(
-  "com.malliina" %% "sbt-utils" % "0.5.0"
+  "com.malliina" %% "sbt-utils" % "0.7.1"
 ) map addSbtPlugin

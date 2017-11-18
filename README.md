@@ -1,3 +1,3 @@
-# scala-template #
+# scala-template
 
 This is an empty scala project template.
