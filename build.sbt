@@ -4,4 +4,4 @@ lazy val template = SbtProjects.testableProject("template")
 
 version := "0.0.1"
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.6"
