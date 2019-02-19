@@ -1,7 +1,6 @@
-import com.malliina.sbtutils.SbtProjects
-
-lazy val template = SbtProjects.testableProject("template")
+lazy val template = project.in(file("."))
+  .enablePlugins(MavenCentralPlugin)
 
 version := "0.0.1"
 
-scalaVersion := "2.12.6"
+scalaVersion := "2.12.8"
