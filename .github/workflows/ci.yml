@@ -18,7 +18,7 @@ jobs:
           SBT_VERSION: 1.2.8
         run: |
           curl -L -o sbt-${SBT_VERSION}.deb https://dl.bintray.com/sbt/debian/sbt-${SBT_VERSION}.deb
-          dpkg -i sbt-${SBT_VERSION}.deb
+          sudo dpkg -i sbt-${SBT_VERSION}.deb
       - name: Prepare SBT
         run: sbt sbtVersion
       - name: Run tests
