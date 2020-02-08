@@ -5,5 +5,6 @@ lib_managed/
 target/
 .idea_modules/
 .hydra
-.bloop
 hydra.sbt
+.bloop
+out
