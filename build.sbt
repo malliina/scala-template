@@ -2,8 +2,9 @@ val template = project
   .in(file("."))
   .settings(
     version := "0.0.1",
-    scalaVersion := "2.13.1",
+    scalaVersion := "2.13.4",
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "3.0.8" % Test
-    )
+      "org.scalameta" %% "munit" % "0.7.22" % Test
+    ),
+	testFrameworks += new TestFramework("munit.Framework")
   )
