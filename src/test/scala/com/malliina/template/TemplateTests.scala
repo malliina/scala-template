@@ -1,9 +1,10 @@
 package com.malliina.template
 
-import munit.FunSuite
-
-class TemplateTests extends FunSuite {
+class TemplateTests extends munit.FunSuite:
   test("can run test") {
     assertEquals(1, 1)
   }
-}
+
+  test("can dotty!") {
+    assertEquals(Dotty.hm, 42)
+  }
