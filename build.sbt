@@ -5,7 +5,7 @@ val template = project
     scalaVersion := "3.0.0",
     crossScalaVersions := Seq(scalaVersion.value),
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "munit" % "0.7.25" % Test
+      "org.scalameta" %% "munit" % "0.7.26" % Test
     ),
     testFrameworks += new TestFramework("munit.Framework")
   )
