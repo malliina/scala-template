@@ -3,4 +3,20 @@
 
 # scala-template
 
-This is an empty scala project template.
+This is an empty scala project template. Builds for the JVM, JS, or to native binaries.
+
+## Native executables
+
+First, see https://www.baeldung.com/scala/native-apps-scala-native.
+
+To create a native executable:
+
+    sbt templateNative/nativeLink
+
+This generates a native executable to directory
+
+    .native/target/scala-3.1.0/
+
+To run the executable on macOS:
+
+    ./.native/target/scala-3.1.0/template-out

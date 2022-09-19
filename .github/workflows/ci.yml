@@ -14,4 +14,4 @@ jobs:
         with:
           java-version: "adopt@1.11"
       - name: Run tests
-        run: sbt +test
+        run: sbt templateJVM/test
