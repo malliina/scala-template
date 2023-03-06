@@ -5,6 +5,8 @@ val template = project
     scalaVersion := "3.2.2",
     crossScalaVersions := Seq(scalaVersion.value),
     libraryDependencies ++= Seq(
+      "io.circe" %% "circe-core" % "0.14.4",
+      "co.fs2" %% "fs2-core" % "3.6.1",
       "org.scalameta" %% "munit" % "0.7.29" % Test
     ),
     testFrameworks += new TestFramework("munit.Framework")

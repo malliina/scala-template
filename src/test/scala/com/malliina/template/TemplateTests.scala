@@ -1,5 +1,6 @@
 package com.malliina.template
 
+import cats.{Eq, Show}
 import com.malliina.template.Primitives.Token
 
 import scala.concurrent.duration.Duration
@@ -28,6 +29,23 @@ class TemplateTests extends munit.FunSuite:
     // does not compile, because opaque type
     // t.nonEmpty
   }
+
+  test("JSON derivation") {
+    import io.circe.syntax.EncoderOps
+    val p = Person("Jack", 42)
+    println(p.asJson)
+    val e = PlanetaryEntity.Planet(1234)
+    println(e.asJson)
+    val u = PlanetaryEntity.Unnatural(true)
+    println(u.asJson)
+  }
+
+  test("homemade custom derivation") {
+    val p = Person("Michael", 25)
+    assertEquals(first(p), First(Option("name"), Option("Michael")))
+  }
+
+  def first[T](t: T)(using f: FirstReader[T]): First = f.compute(t)
 
 class Dur(val d: Duration) extends AnyVal
 object Dur:
