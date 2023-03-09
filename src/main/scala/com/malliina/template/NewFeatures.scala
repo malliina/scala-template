@@ -28,9 +28,13 @@ object Primitives:
   opaque type Token = String
   object Token:
     def apply(s: String): Token = s
+    given Codec[Token] =
+      Codec.from(Decoder.decodeString.map(apply), Encoder.encodeString.contramap(_.trim))
   extension (t: Token)
     def isEmpty = t.isEmpty
     def isValid = false
+
+case class AuthInfo(token: Primitives.Token) derives Codec.AsObject
 
 trait Named:
   def name: String

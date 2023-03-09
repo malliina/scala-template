@@ -32,6 +32,8 @@ class TemplateTests extends munit.FunSuite:
   }
 
   test("JSON derivation") {
+    val auth = AuthInfo(Token("a.b.c"))
+    println(auth.asJson)
     val p = Person("Jack", 42)
 //    println(p.asJson)
     val e = PlanetaryEntity.Planet(1234)
