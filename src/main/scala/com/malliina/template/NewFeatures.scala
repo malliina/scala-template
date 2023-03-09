@@ -1,10 +1,17 @@
 package com.malliina.template
 
-import io.circe.Codec
-import io.circe.derivation.{Configuration, ConfiguredCodec, ConfiguredEnumCodec}
+import cats.syntax.functor.toFunctorOps
+import com.malliina.template
+import com.malliina.values.StringEnumCompanion
+import io.circe
+import io.circe.derivation.{Configuration, ConfiguredCodec, ConfiguredDecoder, ConfiguredEncoder, ConfiguredEnumCodec}
+import io.circe.generic.semiauto.deriveCodec
+import io.circe.syntax.EncoderOps
+import io.circe.{Codec, Decoder, DecodingFailure, Encoder, Json}
 
+import scala.compiletime.{byName, constValue, erasedValue, error, summonAll, summonFrom, summonInline}
 import scala.deriving.Mirror
-import scala.compiletime.{constValue, erasedValue}
+
 object Contextual:
   def compute[T](t: T)(using m: Multiplier[T]): T = m.multiply(t, 3)
 
@@ -25,30 +32,179 @@ object Primitives:
     def isEmpty = t.isEmpty
     def isValid = false
 
-given Configuration =
-  Configuration.default.withDiscriminator("kind")
+trait Named:
+  def name: String
 
-enum PlanetaryEntity derives ConfiguredCodec:
+trait NamedGiven[T <: Named]:
+  val all: Seq[T]
+
+  given Codec[T] = Codec.from(
+    Decoder.decodeString.emap(s => all.find(_.name == s).toRight(s"Unknown name: '$s'.")),
+    Encoder.encodeString.contramap(_.name)
+  )
+
+enum User(val name: String) extends Named:
+  case Jack extends User("Jack")
+  case Kate extends User("Kate")
+  case Linda extends User("Linda")
+
+object User extends NamedGiven[User]:
+  override val all: Seq[User] = User.values
+
+enum PlanetaryEntity:
   case Unnatural(isUfo: Boolean)
   case Planet(size: Double)
 
-case class Unnatural(isUfo: Boolean) derives Codec.AsObject
+object PlanetaryEntity:
+  given Configuration =
+    Configuration.default.withDiscriminator("kind")
+  private val Type = "type"
+  private val UnnaturalKey = "unnatural"
+  private val PlanetKey = "planet"
+  implicit val unnaturalCodec: Codec[Unnatural] = typedCodec(UnnaturalKey, deriveCodec[Unnatural])
+  implicit val planetCodec: Codec[Planet] = typedCodec(PlanetKey, deriveCodec[Planet])
+  private val dec: Decoder[PlanetaryEntity] = Decoder.decodeString.at(Type).flatMap {
+    case PlanetaryEntity.UnnaturalKey => Decoder[Unnatural].widen
+    case PlanetaryEntity.PlanetKey    => Decoder[Planet].widen
+  }
+  private val enc: Encoder[PlanetaryEntity] = {
+    case u @ Unnatural(_) => unnaturalCodec(u)
+    case p @ Planet(_)    => planetCodec(p)
+  }
+  implicit val codec: Codec[PlanetaryEntity] = Codec.from(dec, enc)
+  private def typedCodec[T](name: String, base: Codec[T]) = Codec.from(
+    Decoder.decodeString.at(Type).flatMap { n =>
+      if name == n then base else Decoder.failed(DecodingFailure(s"Expected '$name'.", Nil))
+    },
+    base.mapJson(json => json.deepMerge(Json.obj(Type -> name.asJson)))
+  )
 
 case class Person(name: String, age: Int) derives Codec.AsObject, FirstReader
 
-case class First(member: Option[String], value: Option[String])
+case class First(member: String, value: Option[String])
 
 trait FirstReader[T]:
   def compute(t: T): First
 
-object FirstReader:
-  inline final def derived[T](using mirror: Mirror.Of[T]): FirstReader[T] = (t: T) =>
-    val product = t.asInstanceOf[Product]
-    First(
-      firstLabel[mirror.MirroredElemLabels],
-      Option.when(product.productArity > 0)(product.productElement(0).toString)
-    )
+case class Human(name: String) derives NameReader
 
-  private inline final def firstLabel[T <: Tuple]: Option[String] = inline erasedValue[T] match
-    case _: (t *: ts)  => Option(constValue[t].asInstanceOf[String])
-    case _: EmptyTuple => None
+trait NameReader[T]:
+  def name(t: T): String
+
+object NameReader:
+  inline final def derived[T](using mirror: Mirror.Of[T]): NameReader[T] =
+    val n = constValue[mirror.MirroredLabel]
+    val a = summonFrom[T] {
+      case m: Mirror.Of[T] =>
+        inline erasedValue[m.MirroredElemLabels] match
+          case _: EmptyTuple => "No labels"
+          case _: (t *: ts) =>
+            summonFrom[t] {
+              case am: Mirror.Of[t] =>
+                summonLabels[am.MirroredElemLabels]
+              case _ => "no mirror"
+            }
+      case _ => 32
+    }
+    (t: T) => s"$n a $a"
+
+object FirstReader:
+  inline final def derived[T](using mirror: Mirror.Of[T]): FirstReader[T] =
+    val member = summonLabels[mirror.MirroredElemLabels].head
+    (t: T) =>
+      val product = t.asInstanceOf[Product]
+      First(
+        member,
+        Option.when(product.productArity > 0)(product.productElement(0).toString)
+      )
+
+case class Well(name: String) derives SimpleValueEncoder
+
+trait SimpleValueEncoder[T] extends Encoder[T]
+
+object SimpleValueEncoder:
+  given Configuration =
+    Configuration.default.withDiscriminator("kind")
+
+  inline final def derived[T](using mirror: Mirror.Of[T]): SimpleValueEncoder[T] =
+    val enc = inline erasedValue[mirror.MirroredElemTypes] match
+      case _: EmptyTuple => error("Must have at least one member")
+      case _: (t *: ts)  => summonEncoder[t]
+    val innerEncoder = enc.asInstanceOf[Encoder[Any]]
+    mirror match
+      case _: Mirror.ProductOf[T] =>
+        a =>
+          val product = a.asInstanceOf[Product]
+          innerEncoder(product.productElement(0))
+//      case _: Mirror.SumOf[T] =>
+//        a => innerEncoder(a)
+
+trait EnumEncoder[T] extends Encoder[T]
+
+object EnumEncoder:
+  given Configuration =
+    Configuration.default.withDiscriminator("kind")
+  inline final def derived[T](using mirror: Mirror.Of[T]): EnumEncoder[T] =
+//    val all = summonAll[mirror.MirroredElemTypes]
+    val encs = summonEncoders[mirror.MirroredElemTypes]
+    val labels = summonLabels[mirror.MirroredElemLabels]
+    val yeah = inline erasedValue[mirror.MirroredElemLabels] match
+      case _: EmptyTuple => 32
+      case _: (t *: ts)  =>
+//        summonInline[t]
+        summonFrom[t] {
+          case mirr: Mirror.Of[t] => 42
+          case _                  => 33
+        }
+    mirror match
+      case _: Mirror.ProductOf[T] =>
+        (t: T) => Json.obj("a" -> "product".asJson)
+      case m: Mirror.SumOf[T] =>
+        val enc = encs.head
+        val innerEncoder = enc.asInstanceOf[Encoder[Any]]
+
+        (t: T) =>
+          val product = t.asInstanceOf[Product]
+          Json
+            .obj(
+              "a" -> "sum".asJson,
+              "encs" -> encs.size.asJson,
+              "v" -> s"$t".asJson,
+              "ls" -> s"$labels".asJson,
+              "y" -> s"$yeah".asJson
+            )
+            .deepMerge(innerEncoder(t))
+
+enum EasyEnum derives EasyEnumEncoder:
+  case A(name: String)
+  case B(age: Int)
+
+trait EasyEnumEncoder[T]:
+  def extract(t: T): String
+
+object EasyEnumEncoder:
+  inline final def derived[T](using mirror: Mirror.Of[T]): EasyEnumEncoder[T] =
+    val dummy: EasyEnumEncoder[T] = (t: T) => "dummy"
+    inline erasedValue[mirror.MirroredElemTypes] match
+      case _: (h *: t) =>
+        inline summonInline[Mirror.Of[h]] match
+          case m: Mirror.ProductOf[h] =>
+            (t: T) =>
+              val product = t.asInstanceOf[Product]
+              if product.productArity > 0 then product.productElement(0).toString
+              else "dummy singleton"
+          case _ => dummy
+      case _ => dummy
+
+trait StringEnumEncoder[T] extends Encoder[T]
+
+object StringEnumEncoder:
+  inline def derived[T](using m: Mirror.SumOf[T]): StringEnumEncoder[T] =
+    val elemInstances = summonAll[Tuple.Map[m.MirroredElemTypes, ValueOf]].productIterator
+      .asInstanceOf[Iterator[ValueOf[T]]]
+      .map(_.value)
+    val elemNames = summonAll[Tuple.Map[m.MirroredElemLabels, ValueOf]].productIterator
+      .asInstanceOf[Iterator[ValueOf[String]]]
+      .map(_.value)
+    val mapping = (elemInstances zip elemNames).toMap
+    (t: T) => Encoder[String].contramap[T](mapping.apply)(t)
