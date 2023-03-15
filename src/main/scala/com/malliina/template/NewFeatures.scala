@@ -7,7 +7,7 @@ import io.circe
 import io.circe.derivation.{Configuration, ConfiguredCodec, ConfiguredDecoder, ConfiguredEncoder, ConfiguredEnumCodec}
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax.EncoderOps
-import io.circe.{Codec, Decoder, DecodingFailure, Encoder, Json}
+import io.circe.{Codec, Decoder, DecodingFailure, Encoder, HCursor, Json}
 
 import scala.compiletime.{byName, constValue, erasedValue, error, summonAll, summonFrom, summonInline}
 import scala.deriving.Mirror
@@ -124,12 +124,14 @@ object FirstReader:
 
 case class Well(name: String) derives SimpleValueEncoder
 
+enum SimpleE(val name: String) extends Named derives SimpleEnumCodec:
+  case Jee extends SimpleE("jee")
+  case Juu extends SimpleE("juu")
+
 trait SimpleValueEncoder[T] extends Encoder[T]
 
 object SimpleValueEncoder:
-  given Configuration =
-    Configuration.default.withDiscriminator("kind")
-
+  given Configuration = Configuration.default
   inline final def derived[T](using mirror: Mirror.Of[T]): SimpleValueEncoder[T] =
     val enc = inline erasedValue[mirror.MirroredElemTypes] match
       case _: EmptyTuple => error("Must have at least one member")
@@ -140,44 +142,59 @@ object SimpleValueEncoder:
         a =>
           val product = a.asInstanceOf[Product]
           innerEncoder(product.productElement(0))
-//      case _: Mirror.SumOf[T] =>
-//        a => innerEncoder(a)
+      case sum: Mirror.SumOf[T] =>
+        a => "".asJson
+
+trait SimpleEnumEncoder[T] extends Encoder[T]
+object SimpleEnumEncoder:
+  inline final def derived[T <: Named](using mirror: Mirror.SumOf[T]): SimpleEnumEncoder[T] =
+    a => a.name.asJson
+
+trait SimpleEnumDecoder[T] extends Decoder[T]
+object SimpleEnumDecoder:
+  inline final def derived[T <: Named](using mirror: Mirror.SumOf[T]): SimpleEnumDecoder[T] =
+    val values = summonValues[mirror.MirroredElemTypes, T]
+    val decoder =
+      Decoder.decodeString.emap(s => values.find(_.name == s).toRight(s"Unknown enum value: '$s'."))
+    h => decoder(h)
+
+trait SimpleEnumCodec[T] extends SimpleEnumEncoder[T], SimpleEnumDecoder[T]
+object SimpleEnumCodec:
+  inline final def derived[T <: Named](using mirror: Mirror.SumOf[T]): SimpleEnumCodec[T] =
+    val dec = SimpleEnumDecoder.derived[T]
+    val enc = SimpleEnumEncoder.derived[T]
+    new SimpleEnumCodec[T]:
+      override def apply(c: HCursor): Decoder.Result[T] = dec(c)
+      override def apply(a: T): Json = enc(a)
+
+enum MyEnum derives EnumEncoder, EnumDecoder:
+  case HeyYou
+  case AaaBoo
 
 trait EnumEncoder[T] extends Encoder[T]
+trait EnumDecoder[T] extends Decoder[T]
 
 object EnumEncoder:
-  given Configuration =
-    Configuration.default.withDiscriminator("kind")
-  inline final def derived[T](using mirror: Mirror.Of[T]): EnumEncoder[T] =
-//    val all = summonAll[mirror.MirroredElemTypes]
-    val encs = summonEncoders[mirror.MirroredElemTypes]
+  // Serializes enum cases to camelCase
+  inline final def derived[T](using mirror: Mirror.SumOf[T]): EnumEncoder[T] =
     val labels = summonLabels[mirror.MirroredElemLabels]
-    val yeah = inline erasedValue[mirror.MirroredElemLabels] match
-      case _: EmptyTuple => 32
-      case _: (t *: ts)  =>
-//        summonInline[t]
-        summonFrom[t] {
-          case mirr: Mirror.Of[t] => 42
-          case _                  => 33
-        }
-    mirror match
-      case _: Mirror.ProductOf[T] =>
-        (t: T) => Json.obj("a" -> "product".asJson)
-      case m: Mirror.SumOf[T] =>
-        val enc = encs.head
-        val innerEncoder = enc.asInstanceOf[Encoder[Any]]
+    (t: T) =>
+      val caseName = labels(mirror.ordinal(t))
+      val name = caseName.toCharArray.toList match
+        case h :: t => (Seq(h.toLower) ++ t).mkString
+        case other  => other.mkString
+      name.asJson
 
-        (t: T) =>
-          val product = t.asInstanceOf[Product]
-          Json
-            .obj(
-              "a" -> "sum".asJson,
-              "encs" -> encs.size.asJson,
-              "v" -> s"$t".asJson,
-              "ls" -> s"$labels".asJson,
-              "y" -> s"$yeah".asJson
-            )
-            .deepMerge(innerEncoder(t))
+object EnumDecoder:
+  inline def derived[T](using mirror: Mirror.SumOf[T]): EnumDecoder[T] =
+    val labels = summonLabels[mirror.MirroredElemLabels]
+    val values = summonAll[Tuple.Map[mirror.MirroredElemTypes, ValueOf]].productIterator
+      .map(_.asInstanceOf[ValueOf[T]].value)
+    val valuesByName = (labels.map(_.toLowerCase) zip values).toMap
+    val decoder = Decoder.decodeString.emap { s =>
+      valuesByName.get(s.toLowerCase).toRight(s"Invalid name: '$s'.")
+    }
+    h => decoder(h)
 
 enum EasyEnum derives EasyEnumEncoder:
   case A(name: String)
@@ -212,3 +229,11 @@ object StringEnumEncoder:
       .map(_.value)
     val mapping = (elemInstances zip elemNames).toMap
     (t: T) => Encoder[String].contramap[T](mapping.apply)(t)
+
+trait Computer:
+  type Ret
+  def compute(n: Int): Ret
+
+class MyComputer extends Computer:
+  type Ret = String
+  override def compute(n: Int): Ret = List.fill(n)("hej").mkString

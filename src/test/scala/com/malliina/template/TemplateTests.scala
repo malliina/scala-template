@@ -50,7 +50,8 @@ class TemplateTests extends munit.FunSuite:
 //    println(a.asJson)
 
     val well = Well("Hej")
-//    println(well.asJson)
+    println(well.asJson)
+    assertEquals(well.asJson, well.name.asJson)
 
 //    val welle = WellE.M
 //    println(welle.asJson)
@@ -59,6 +60,14 @@ class TemplateTests extends munit.FunSuite:
 
     println(User.Jack.asJson)
     println(User.Linda.asJson)
+
+    assertEquals(MyEnum.AaaBoo.asJson, "aaaBoo".asJson)
+    val result = decode[MyEnum](""""aaaBoo"""")
+    println(result)
+    assert(result.isRight)
+    assert(result.contains(MyEnum.AaaBoo))
+
+    println(SimpleE.Jee.asJson)
   }
 
   test("homemade custom derivation") {
