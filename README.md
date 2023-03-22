@@ -15,8 +15,8 @@ To create a native executable:
 
 This generates a native executable to directory
 
-    .native/target/scala-3.1.0/
+    .native/target/scala-3.2.2/
 
 To run the executable on macOS:
 
-    ./.native/target/scala-3.1.0/template-out
+    ./.native/target/scala-3.2.2/template-out
