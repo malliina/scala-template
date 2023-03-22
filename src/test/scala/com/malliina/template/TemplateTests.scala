@@ -91,6 +91,11 @@ class TemplateTests extends munit.FunSuite:
     println(s.name(d))
   }
 
+  test("union etc") {
+    val str = MyComputer.size(3)
+    println(str)
+  }
+
   def opt[T](o: Opt[T]) = "jee"
   def x(x: X) = "hej"
   def what(e: EasyEnum): Unit = println(s"Jee $e")

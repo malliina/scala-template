@@ -237,3 +237,6 @@ trait Computer:
 class MyComputer extends Computer:
   type Ret = String
   override def compute(n: Int): Ret = List.fill(n)("hej").mkString
+
+object MyComputer:
+  def size(size: 2 | 4 | 8): String = s"The size is $size"
