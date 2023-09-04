@@ -1,5 +1,5 @@
-scalaVersion := "2.12.17"
+scalaVersion := "2.12.18"
 
 Seq(
-  "org.scalameta" % "sbt-scalafmt" % "2.5.0"
+  "org.scalameta" % "sbt-scalafmt" % "2.5.2"
 ) map addSbtPlugin
