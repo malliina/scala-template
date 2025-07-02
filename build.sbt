@@ -1,21 +1,20 @@
 inThisBuild(
   Seq(
-    scalaVersion := "3.2.2"
+    scalaVersion := "3.7.1"
   )
 )
 
-val template =
+val app =
   crossProject(JSPlatform, JVMPlatform, NativePlatform)
     .crossType(CrossType.Pure)
     .in(file("."))
     .settings(
       version := "0.0.1",
       libraryDependencies ++= Seq(
-        "org.scalameta" %% "munit" % "0.7.29" % Test
-      ),
-      testFrameworks += new TestFramework("munit.Framework")
+        "org.scalameta" %% "munit" % "1.1.1" % Test
+      )
     )
 
-val js = template.js
-val jvm = template.jvm
-val native = template.native
+val js = app.js
+val jvm = app.jvm
+val native = app.native
